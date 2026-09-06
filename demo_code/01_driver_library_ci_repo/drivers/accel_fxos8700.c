@@ -1,6 +1,6 @@
 /*
  * Portable FXOS8700CQ driver. Register map and conversion verified in P1
- * (see P1_Project_Manual.md, Section 12): WHO_AM_I at 0x0D returns 0xC7,
+ * (see P1's manual, Section 12): WHO_AM_I at 0x0D returns 0xC7,
  * XYZ_DATA_CFG at 0x0E set to 0x01 selects +/-4g range (0.488 mg/LSB),
  * CTRL_REG1 at 0x2A goes 0x00 (standby) then 0x0D (200 Hz active), and
  * OUT_X_MSB at 0x01 starts a 6-byte X/Y/Z read. Every register access
