@@ -3,6 +3,14 @@
  * its own calibrated baseline. Talks to the hardware only through
  * hal_tsi.h, same portability pattern as accel_fxos8700.c.
  */
+
+/*
+ * WHAT: Declares a minimal touch-button interface: initialize/calibrate
+ * one channel, then ask whether it's currently pressed.
+ * WHY: touch_handle_t holds only what's needed to answer that question
+ * later (which channel, and its calibrated baseline), mirroring
+ * accel_handle_t's minimal-state design in the accelerometer driver.
+ */
 #ifndef TOUCH_TSI_H
 #define TOUCH_TSI_H
 

@@ -4,6 +4,15 @@
  *   - hal_tsi_kl26z.c: real implementation, wraps fsl_tsi_v4.h, ARM only.
  *   - tests/mocks/mock_hal_tsi.c: fake implementation, host only.
  */
+
+/*
+ * WHAT: Declares the touch-sensing operations drivers/touch_tsi.c is
+ * allowed to use: initialize, calibrate a channel, read a raw counter.
+ * WHY: Same ports-and-adapters reasoning as hal_i2c.h: keeping this
+ * interface free of any SDK/TSI-register-specific types is what lets
+ * touch_tsi.c compile unmodified against either the real hardware
+ * implementation or the host-native mock.
+ */
 #ifndef HAL_TSI_H
 #define HAL_TSI_H
 

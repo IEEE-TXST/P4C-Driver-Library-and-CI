@@ -5,6 +5,23 @@
  * native C program before being hardcoded (see the manual, Section 9),
  * not eyeballed.
  */
+
+/*
+ * WHAT: Six Unity test cases covering Accel_Init and Accel_ReadXYZ_mg's
+ * success paths, failure paths, and edge cases, all driven by the mock I2C
+ * HAL instead of real hardware.
+ * HOW: Every test follows the same shape: program the mock (what address
+ * responds, what bytes it returns, or force a failure), call the driver
+ * function under test, then assert on both its return value and any
+ * observable side effects (the config sequence it wrote, the values it
+ * computed).
+ * WHY: This is what "testable because of the HAL boundary" (see
+ * drivers/accel_fxos8700.c) looks like in practice: scenarios that would
+ * be slow, flaky, or outright impossible to reliably trigger on real
+ * hardware, like "the accelerometer never responds" or "I2C fails mid-read"
+ * are here expressed as a couple of mock function calls, runnable in
+ * milliseconds, every time, in CI.
+ */
 #include "unity.h"
 #include "accel_fxos8700.h"
 #include "mock_hal_i2c.h"
@@ -15,6 +32,8 @@
 #define ACCEL_OUT_X_MSB_REG 0x01U
 #define ACCEL_WHOAMI_VALUE 0xC7U
 
+/* Unity calls this before every single test function, guaranteeing no
+   state (programmed responses, recorded writes) leaks between tests. */
 void setUp(void)
 {
     MockHalI2c_Reset();
@@ -57,6 +76,10 @@ void test_Init_FindsDeviceAndRunsCorrectConfigSequence_WhenWhoAmIMatches(void)
     TEST_ASSERT_EQUAL_HEX8(0x0DU, value);
 }
 
+/* Nothing is programmed on the mock at all here, on purpose: every probed
+   address NACKs, exactly simulating a board with no accelerometer wired
+   up, a scenario that would need physically unplugging a sensor to test
+   on real hardware. */
 void test_Init_ReturnsFalse_WhenNoDeviceRespondsAtAnyAddress(void)
 {
     accel_handle_t handle;
@@ -99,6 +122,9 @@ void test_ReadXYZ_ConvertsRawBytesToCorrectMg(void)
     TEST_ASSERT_EQUAL_INT16(499, z);
 }
 
+/* Successfully initializes first, THEN forces the next read to fail, to
+   isolate "the sensor was found but a later read failed" from "the sensor
+   was never found at all" (the earlier tests above). */
 void test_ReadXYZ_ReturnsFalseAndZeroes_WhenI2cReadFails(void)
 {
     uint8_t whoAmI = ACCEL_WHOAMI_VALUE;
@@ -116,6 +142,9 @@ void test_ReadXYZ_ReturnsFalseAndZeroes_WhenI2cReadFails(void)
     TEST_ASSERT_EQUAL_INT16(0, z);
 }
 
+/* Simulates a caller that skips checking Accel_Init's return value, or
+   calls Accel_ReadXYZ_mg before ever calling Accel_Init: the driver must
+   fail safely, not crash or read garbage. */
 void test_ReadXYZ_ReturnsFalse_WhenNeverInitialized(void)
 {
     accel_handle_t handle = {0U, false}; /* as if Accel_Init() was never called, or failed */

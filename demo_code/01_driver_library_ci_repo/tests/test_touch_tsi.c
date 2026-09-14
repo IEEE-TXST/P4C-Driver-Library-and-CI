@@ -2,6 +2,20 @@
  * Unity tests for drivers/touch_tsi.c, running entirely on the host.
  * tests/mocks/mock_hal_tsi.c stands in for the TSI hardware.
  */
+
+/*
+ * WHAT: Five Unity tests covering Touch_Init and Touch_IsPressed, focused
+ * heavily on the threshold boundary (Touch_IsPressed's one real piece of
+ * logic).
+ * HOW: Each test sets a calibration baseline and a raw counter value on
+ * the mock, then checks whether Touch_IsPressed correctly classifies that
+ * reading as touched or not.
+ * WHY: TOUCH_THRESHOLD_COUNTS (100) is exactly the kind of boundary value
+ * worth testing on both sides of, at, and near: these tests specifically
+ * check a reading at baseline (delta 0), just under the threshold (delta
+ * 80), just over it (delta 150), and below baseline entirely (delta -100),
+ * not just one "obviously touched" case.
+ */
 #include "unity.h"
 #include "touch_tsi.h"
 #include "mock_hal_tsi.h"

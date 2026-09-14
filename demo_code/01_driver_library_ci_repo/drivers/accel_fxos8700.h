@@ -6,6 +6,15 @@
  * test suite (tests/, linked against tests/mocks/mock_hal_i2c.c). See the
  * manual, Section 6.
  */
+
+/*
+ * WHAT: Declares this driver's public interface: initialize (find and
+ * configure the sensor), then read X/Y/Z.
+ * WHY: A driver's header is its contract with the rest of the codebase;
+ * accel_handle_t is deliberately tiny (just the discovered address and a
+ * found flag), since this driver keeps no other state, everything else it
+ * needs lives in the HAL it calls through.
+ */
 #ifndef ACCEL_FXOS8700_H
 #define ACCEL_FXOS8700_H
 

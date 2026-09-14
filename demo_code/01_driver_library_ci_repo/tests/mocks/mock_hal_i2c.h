@@ -4,6 +4,17 @@
  * check what the driver wrote afterward. Real firmware never sees this
  * header; only tests/ includes it.
  */
+
+/*
+ * WHAT: The test-side API for controlling and inspecting the fake I2C
+ * "hardware" mock_hal_i2c.c implements.
+ * WHY: These functions are deliberately separate from hal_i2c.h's real
+ * interface (HAL_I2C_ReadRegs/WriteReg): a driver under test only ever
+ * calls the hal_i2c.h functions, while the TEST itself calls these
+ * Mock*-prefixed functions to program what those calls should return, and
+ * later to inspect what got written. Keeping the two APIs distinct is what
+ * lets accel_fxos8700.c stay completely unaware it's being tested at all.
+ */
 #ifndef MOCK_HAL_I2C_H
 #define MOCK_HAL_I2C_H
 

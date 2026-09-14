@@ -6,6 +6,22 @@
  * OUT_X_MSB at 0x01 starts a 6-byte X/Y/Z read. Every register access
  * goes through hal_i2c.h, never touches I2C0 directly.
  */
+
+/*
+ * WHAT: The accelerometer's logic (find it, configure it, read and convert
+ * its output), written once and reused unchanged by both the real firmware
+ * and the automated test suite.
+ * HOW: Every hardware interaction goes through HAL_I2C_ReadRegs/WriteReg
+ * (declared in hal_i2c.h), never a direct SDK call; this file has no idea
+ * whether it's running against real I2C0 silicon or a plain-array test
+ * double, and doesn't need to.
+ * WHY: This is the payoff of the HAL boundary: the exact same register
+ * sequence and conversion math this project already verified against real
+ * hardware in P1 can now also be exercised automatically, on a developer's
+ * laptop or in CI, with no board attached, by linking this file against
+ * tests/mocks/mock_hal_i2c.c instead of hal_i2c_kl26z.c. See tests/
+ * test_accel_fxos8700.c for exactly how that's exploited.
+ */
 #include <stddef.h>
 #include "accel_fxos8700.h"
 #include "hal_i2c.h"
@@ -18,6 +34,17 @@
 
 static const uint8_t kAccelAddresses[] = {0x1CU, 0x1DU, 0x1EU, 0x1FU};
 
+/*
+ * WHAT: Finds the sensor by probing its possible addresses, then
+ * configures it for continuous +/-4g measurement.
+ * HOW: Identical probe-and-configure sequence to every earlier project's
+ * accelerometer code (P1, P4-A, P4-B), just expressed through
+ * HAL_I2C_ReadRegs/WriteReg instead of a locally-defined I2C wrapper.
+ * WHY: Writing handle->address = 0 / handle->found = false FIRST, before
+ * the probe loop even runs, guarantees a caller that skips checking the
+ * return value still gets a handle that safely reports "not found" rather
+ * than one left in an undefined state.
+ */
 bool Accel_Init(accel_handle_t *handle)
 {
     uint32_t i;
@@ -49,6 +76,20 @@ bool Accel_Init(accel_handle_t *handle)
     return true;
 }
 
+/*
+ * WHAT: Reads X/Y/Z and converts to milli-g, failing safely if the sensor
+ * was never found or the read itself fails.
+ * HOW: Zeros all three outputs FIRST, before any failure check, so every
+ * exit path (NULL handle, not-found handle, failed I2C read) leaves the
+ * caller with valid-looking (zeroed), not garbage, output values; same
+ * unpacking/scaling math as every earlier accelerometer read in this
+ * series.
+ * WHY: This defensive-zeroing pattern matters more here than in the
+ * earlier one-off demo files, because this driver is meant to be reused by
+ * arbitrary future code that might not always check the boolean return
+ * value carefully; failing safe here means a bug elsewhere reads plausible
+ * zeros instead of uninitialized stack memory.
+ */
 bool Accel_ReadXYZ_mg(const accel_handle_t *handle, int16_t *xMg, int16_t *yMg, int16_t *zMg)
 {
     uint8_t raw[6];
