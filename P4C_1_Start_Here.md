@@ -28,21 +28,37 @@ Section numbers (0-22) are kept consistent across all 4 files, so "see Section 9
 
 Same rule as every prior manual: a reference, not required reading. Build the repo structure and get one test passing yourself first; open `demo_code/` only when stuck.
 
-This project reads differently from every embedded project before it, on purpose. There is comparatively little hardware debugging here (Section 0 explains why), and comparatively more software architecture: how you draw the line between "code that touches a register" and "code that doesn't," and what that line buys you. Take the software engineering content as seriously as the embedded content; for a lot of hiring managers, this is the project on your resume that reads as most immediately recognizable.
+This project reads differently from every embedded project before it, on purpose. There is comparatively little hardware debugging here (Section 0 explains why), and comparatively more software architecture: how you draw the line between "code that touches a register" and "code that doesn't," and what that line buys you.
+
+Take the software engineering content as seriously as the embedded content; for a lot of hiring managers, this is the project on your resume that reads as most immediately recognizable.
 
 Project leaders: bench-test `demo_code/01_driver_library_ci_repo/` before WS8, in both senses this project actually has: run `make test` on your own laptop and confirm all 11 tests pass, and separately, flash `app/` to a real board and confirm the printed accelerometer and touch readings look sane. Also worth doing once, if you have time: actually push the reference repo to a scratch GitHub repository and watch the Actions tab go green, so you've seen the real CI pipeline work, not just read a YAML file that looks correct.
 
-**A note on accuracy:** this project's test suite was not just written, it was run, repeatedly, and a test was deliberately broken and confirmed to fail correctly before being fixed again, the strongest verification available short of literally watching GitHub Actions execute. The real embedded firmware was compiled and confirmed to link the *exact same* driver source files the test suite exercises. Section 21 has the full trail.
+#### A note on accuracy
+
+This project's test suite was not just written, it was run, repeatedly, and a test was deliberately broken and confirmed to fail correctly before being fixed again, the strongest verification available short of literally watching GitHub Actions execute.
+
+The real embedded firmware was compiled and confirmed to link the *exact same* driver source files the test suite exercises. Section 21 has the full trail.
 
 ---
 
 ## 0. Why This Session Exists
 
-Every project before this one asked "does the firmware work." This one asks a different, equally real question: "how do you know your firmware works, and how do you keep knowing that as more people touch the code?" A chapter with 25 boards and rotating membership is exactly the situation where untested, unreviewed embedded code quietly breaks in ways nobody notices until a demo fails. The pattern this project teaches, separate the hardware-touching code from the logic, mock the hardware for testing, automate the test run on every change, is not a student-project simplification of how real companies work; it is, close to verbatim, how real companies work. A firmware engineer who can say "I built a driver library with a mocked test suite and CI" in an interview is describing a genuinely professional practice, not a toy exercise.
+Every project before this one asked "does the firmware work." This one asks a different, equally real question: "how do you know your firmware works, and how do you keep knowing that as more people touch the code?"
+
+A chapter with 25 boards and rotating membership is exactly the situation where untested, unreviewed embedded code quietly breaks in ways nobody notices until a demo fails. The pattern this project teaches, separate the hardware-touching code from the logic, mock the hardware for testing, automate the test run on every change, is not a student-project simplification of how real companies work; it is, close to verbatim, how real companies work.
+
+A firmware engineer who can say "I built a driver library with a mocked test suite and CI" in an interview is describing a genuinely professional practice, not a toy exercise.
 
 ## 2. Purpose
 
-By the end of this project, every group has: a GitHub repository laid out as `drivers/`, `hal/`, `tests/`, `app/`; a hardware abstraction layer with a real and a mocked implementation of the same interface; a Unity test suite covering both the accelerometer and touch drivers, including error cases; a GitHub Actions workflow running that suite on every push; and a README with a CI badge, build instructions, and driver API documentation, demonstrated at the Nov 19 showcase with the badge showing green.
+By the end of this project, every group has:
+
+- A GitHub repository laid out as `drivers/`, `hal/`, `tests/`, `app/`.
+- A hardware abstraction layer with a real and a mocked implementation of the same interface.
+- A Unity test suite covering both the accelerometer and touch drivers, including error cases.
+- A GitHub Actions workflow running that suite on every push.
+- A README with a CI badge, build instructions, and driver API documentation, demonstrated at the Nov 19 showcase with the badge showing green.
 
 ## 3. Prerequisites
 

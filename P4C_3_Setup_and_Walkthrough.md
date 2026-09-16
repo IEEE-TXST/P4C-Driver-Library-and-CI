@@ -71,7 +71,9 @@ typedef struct
 static programmed_response_t s_responses[MAX_RESPONSES];
 ```
 
-A test calls `MockHalI2c_SetReadResponse(0x1DU, ACCEL_WHOAMI_REG, &whoAmI, 1U)` before running driver code, which stores "if anyone asks to read register `0x0D` from device `0x1D`, hand back this byte" in that array. When `HAL_I2C_ReadRegs()` is later called (indirectly, by the driver code under test), it just searches that array for a match and returns what it finds, or `kHalI2cErrorNack` if nothing was ever programmed for that address, exactly mimicking a real device that isn't there. `MockHalI2c_ForceReadStatus()` lets a test simulate any read failing outright, for testing error handling (Section 9) without needing a real, physically flaky I2C bus to reproduce a NACK on demand. This is the entire "mock hardware registers" concept: no `volatile`, no memory-mapped anything, ordinary C arrays a test can fully control.
+A test calls `MockHalI2c_SetReadResponse(0x1DU, ACCEL_WHOAMI_REG, &whoAmI, 1U)` before running driver code, which stores "if anyone asks to read register `0x0D` from device `0x1D`, hand back this byte" in that array. When `HAL_I2C_ReadRegs()` is later called (indirectly, by the driver code under test), it just searches that array for a match and returns what it finds, or `kHalI2cErrorNack` if nothing was ever programmed for that address, exactly mimicking a real device that isn't there.
+
+`MockHalI2c_ForceReadStatus()` lets a test simulate any read failing outright, for testing error handling (Section 9) without needing a real, physically flaky I2C bus to reproduce a NACK on demand. This is the entire "mock hardware registers" concept: no `volatile`, no memory-mapped anything, ordinary C arrays a test can fully control.
 
 **Unity itself is vendored, not installed.** `tests/unity/unity.c`, `unity.h`, and `unity_internals.h` are the real, unmodified upstream source (MIT licensed; `tests/unity/LICENSE.txt` is included), copied directly into the repository rather than fetched during the build. This means `make test` works immediately after a fresh `git clone`, with no separate install step, and CI needs no extra setup stage to go fetch a dependency before it can even start testing.
 
@@ -127,7 +129,11 @@ test: build/test_accel_fxos8700 build/test_touch_tsi
 	build/test_touch_tsi
 ```
 
-Notice what's absent: no `arm-none-eabi-gcc`, no SDK, no board. This builds two ordinary native executables that link the driver source against the mocks, and just runs them; `-Werror` means even a compiler warning fails the build, not only an actual test assertion. **This was actually run, not just written to look plausible.** All 11 tests pass, `6 Tests 0 Failures 0 Ignored` for the accelerometer suite, `5 Tests 0 Failures 0 Ignored` for touch. A single expected value was then deliberately changed to a wrong one, and `make test` correctly failed (`FAIL: Expected 500 Was 499`) with a non-zero exit code, exactly what would turn a GitHub Actions check red, before being reverted; this confirms the suite genuinely detects a wrong answer, not just that it compiles.
+Notice what's absent: no `arm-none-eabi-gcc`, no SDK, no board. This builds two ordinary native executables that link the driver source against the mocks, and just runs them; `-Werror` means even a compiler warning fails the build, not only an actual test assertion.
+
+**This was actually run, not just written to look plausible.** All 11 tests pass, `6 Tests 0 Failures 0 Ignored` for the accelerometer suite, `5 Tests 0 Failures 0 Ignored` for touch.
+
+A single expected value was then deliberately changed to a wrong one, and `make test` correctly failed (`FAIL: Expected 500 Was 499`) with a non-zero exit code, exactly what would turn a GitHub Actions check red, before being reverted; this confirms the suite genuinely detects a wrong answer, not just that it compiles.
 
 ## 11. Session 1 Deliverable: One Passing Test
 
@@ -149,11 +155,15 @@ jobs:
         run: make test
 ```
 
-This is deliberately the simplest workflow that does the real job: on every push and every pull request, GitHub spins up a fresh Ubuntu machine, checks out the repository, and runs exactly `make test`, the same command from Section 10. If that command's exit code is non-zero, GitHub marks the check as failed, visible directly on the commit and on any open pull request, without anyone needing to have run the tests locally first. This file has not been run on GitHub's actual servers as part of this manual's verification (that requires a real, pushed repository); what's been verified is that the command it runs, `make test`, genuinely works and genuinely detects failures (Section 10).
+This is deliberately the simplest workflow that does the real job: on every push and every pull request, GitHub spins up a fresh Ubuntu machine, checks out the repository, and runs exactly `make test`, the same command from Section 10.
+
+If that command's exit code is non-zero, GitHub marks the check as failed, visible directly on the commit and on any open pull request, without anyone needing to have run the tests locally first. This file has not been run on GitHub's actual servers as part of this manual's verification (that requires a real, pushed repository); what's been verified is that the command it runs, `make test`, genuinely works and genuinely detects failures (Section 10).
 
 ## 13. Pull Request Workflow
 
-The practical Git workflow this project asks for: each group member branches off `main` for their own change, pushes it, and opens a pull request rather than pushing straight to `main`. GitHub Actions runs automatically on that PR (Section 12); a reviewer, another member of the group, checks that the CI check is green before approving and merging, not just that the code looks reasonable on read-through. This is a small-scale version of exactly how professional teams gate code review on automated checks, and it's worth actually practicing the mechanics (branch, push, open PR, wait for the check, review, merge) rather than treating it as a formality, since the muscle memory is the transferable skill here, not the specific repository.
+The practical Git workflow this project asks for: each group member branches off `main` for their own change, pushes it, and opens a pull request rather than pushing straight to `main`. GitHub Actions runs automatically on that PR (Section 12); a reviewer, another member of the group, checks that the CI check is green before approving and merging, not just that the code looks reasonable on read-through.
+
+This is a small-scale version of exactly how professional teams gate code review on automated checks, and it's worth actually practicing the mechanics (branch, push, open PR, wait for the check, review, merge) rather than treating it as a formality, since the muscle memory is the transferable skill here, not the specific repository.
 
 ## 14. Building and Bench-Testing the Real Firmware
 
@@ -170,7 +180,9 @@ for (;;)
 }
 ```
 
-It links `drivers/accel_fxos8700.c` and `drivers/touch_tsi.c`, the *exact same files* Section 9's tests exercise, now compiled against `hal/hal_i2c_kl26z.c` and `hal/hal_tsi_kl26z.c` (the real implementations) instead of the mocks. If this builds, flashes, and prints sane readings on a real board, that's direct, concrete evidence that testing without hardware (Section 9) produced code that actually works on hardware, not just code that satisfies a mock's expectations. Build it the same way as every prior project's demo code, `cmake` / `make` / `objcopy`, covered in the P0 manual, Section 8.
+It links `drivers/accel_fxos8700.c` and `drivers/touch_tsi.c`, the *exact same files* Section 9's tests exercise, now compiled against `hal/hal_i2c_kl26z.c` and `hal/hal_tsi_kl26z.c` (the real implementations) instead of the mocks.
+
+If this builds, flashes, and prints sane readings on a real board, that's direct, concrete evidence that testing without hardware (Section 9) produced code that actually works on hardware, not just code that satisfies a mock's expectations. Build it the same way as every prior project's demo code, `cmake` / `make` / `objcopy`, covered in the P0 manual, Section 8.
 
 ---
 
